@@ -3,10 +3,7 @@ package hudson.plugins.jira;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.Result;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -26,6 +23,7 @@ public class JiraIssueUpdateBuilderTest {
 	private Launcher launcher;
 	private FilePath workspace;
 	private TaskListener listener;
+	private Run run;
 	private AbstractBuild build;
 	private EnvVars env;
 	private AbstractProject project;
@@ -38,6 +36,7 @@ public class JiraIssueUpdateBuilderTest {
 	public void createMocks() throws IOException, InterruptedException {
 		launcher = mock(Launcher.class);
 		listener = mock(TaskListener.class);
+		run = mock(Run.class);
         env = mock(EnvVars.class);
         project = mock(AbstractProject.class);
         logger = mock(PrintStream.class);
@@ -73,7 +72,7 @@ public class JiraIssueUpdateBuilderTest {
 	public void performTimeout() throws InterruptedException, IOException, TimeoutException {
 		JiraIssueUpdateBuilder builder = spy(new JiraIssueUpdateBuilder(null, null, null));
 		doReturn(site).when(builder).getSiteForJob(Mockito.any());
-		doThrow(new TimeoutException()).when(site).progressMatchingIssues(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
+		doThrow(new TimeoutException()).when(site).progressMatchingIssues(any(TaskListener.class), any(Run.class), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
 		builder.perform(build, workspace, launcher, listener);
 		assertThat(result, is(Result.FAILURE));
 	}
@@ -82,7 +81,7 @@ public class JiraIssueUpdateBuilderTest {
 	public void performProgressFails() throws InterruptedException, IOException, TimeoutException {
 		JiraIssueUpdateBuilder builder = spy(new JiraIssueUpdateBuilder(null, null, null));
 		doReturn(site).when(builder).getSiteForJob(Mockito.any());
-		doReturn(false).when(site).progressMatchingIssues(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
+		doReturn(false).when(site).progressMatchingIssues(any(TaskListener.class), any(Run.class), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
 		builder.perform(build, workspace, launcher, listener);
 		assertThat(result, is(Result.UNSTABLE));
 	}
@@ -91,7 +90,7 @@ public class JiraIssueUpdateBuilderTest {
 	public void performProgressOK() throws InterruptedException, IOException, TimeoutException {
 		JiraIssueUpdateBuilder builder = spy(new JiraIssueUpdateBuilder(null, null, null));
 		doReturn(site).when(builder).getSiteForJob(Mockito.any());
-		doReturn(true).when(site).progressMatchingIssues(Mockito.anyString(), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
+		doReturn(true).when(site).progressMatchingIssues(any(TaskListener.class), any(Run.class), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
 		builder.perform(build, workspace, launcher, listener);
 		assertThat(result, is(Result.SUCCESS));
 	}

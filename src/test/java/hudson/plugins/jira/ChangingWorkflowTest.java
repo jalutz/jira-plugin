@@ -2,6 +2,9 @@ package hudson.plugins.jira;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.Transition;
+import com.google.common.collect.Sets;
+import hudson.model.*;
+import hudson.scm.ChangeLogSet;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,16 +15,18 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import static org.apache.commons.lang.RandomStringUtils.randomNumeric;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.isNull;
+import static org.mockito.Matchers.*;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.*;
 
@@ -45,13 +50,83 @@ public class ChangingWorkflowTest {
 
     @Mock
     private JiraSession mockSession;
+    
+    @Mock
+    private TaskListener mockTaskListener;
 
+    private AbstractBuild mockRun;
 
     private JiraSession spySession;
 
+    private static class MockEntry extends ChangeLogSet.Entry {
+
+        private final String msg;
+
+        public MockEntry(String msg) {
+            this.msg = msg;
+        }
+
+        @Override
+        public Collection<String> getAffectedPaths() {
+            return null;
+        }
+
+        @Override
+        public User getAuthor() {
+            return null;
+        }
+
+        @Override
+        public String getMsg() {
+            return this.msg;
+        }
+    }
+
     @Before
     public void setupSpy() throws Exception {
-        spySession = spy(new JiraSession(site, restService));
+        JiraSession session = new JiraSession(site, restService);
+        spySession = spy(session);
+
+        Issue mockIssue = mock(Issue.class);
+        when(mockIssue.getKey()).thenReturn("ABC-1");
+        when(mockSession.getIssue(anyString())).thenReturn(mockIssue);
+
+        JiraSite site = mock(JiraSite.class);
+        when(site.getSession()).thenReturn(session);
+        when(site.getIssuePattern()).thenReturn(Pattern.compile("(TR-[0-9]*)"));
+
+        mockRun = mock(AbstractBuild.class);
+        mockTaskListener = mock(TaskListener.class);
+
+        when(mockTaskListener.getLogger()).thenReturn(System.out);
+
+        ChangeLogSet changeLogSet = mock(ChangeLogSet.class);
+
+        Set<? extends ChangeLogSet.Entry> entries = Sets.newHashSet(
+                new MockEntry("Fixed JI123-4711"),
+                new MockEntry("Fixed foo_bar-4710"),
+                new MockEntry("Fixed FoO_bAr-4711"),
+                new MockEntry("Fixed something.\nJFoO_bAr_MULTI-4718"),
+                new MockEntry("TR-123: foo"),
+                new MockEntry("[ABC-42] hallo"),
+                new MockEntry("#123: this one must not match"),
+                new MockEntry("ABC-: this one must also not match"),
+                new MockEntry("ABC-: \n\nABC-127:\nthis one should match"),
+                new MockEntry("ABC-: \n\nABC-128:\nthis one should match"),
+                new MockEntry("ABC-: \n\nXYZ-10:\nXYZ-20 this one too"),
+                new MockEntry("Fixed DOT-4."),
+                new MockEntry("Fixed DOT-5. Did it right this time"));
+
+        when(changeLogSet.iterator()).thenReturn(entries.iterator());
+
+        when(mockRun.getChangeSet()).thenReturn(changeLogSet);
+
+        Job mockJob = mock(Job.class);
+        when(mockRun.getParent()).thenReturn(mockJob);
+
+        JiraProjectProperty jiraProjectProperty = mock(JiraProjectProperty.class);
+        when(jiraProjectProperty.getSite()).thenReturn(site);
+        when(mockJob.getProperty(JiraProjectProperty.class)).thenReturn(jiraProjectProperty);
     }
 
     @Test
@@ -110,10 +185,10 @@ public class ChangingWorkflowTest {
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
         when(mockSession.getActionIdForIssue(anyString(),
                 eq(NON_EMPTY_WORKFLOW_LOWERCASE))).thenReturn(Integer.valueOf(randomNumeric(5)));
-        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(ISSUE_JQL,
+        site.progressMatchingIssues(mockTaskListener, mockRun,
                 NON_EMPTY_WORKFLOW_LOWERCASE, NON_EMPTY_COMMENT, mock(PrintStream.class));
 
         verify(mockSession, times(1)).addComment(anyString(), eq(NON_EMPTY_COMMENT),
@@ -126,10 +201,10 @@ public class ChangingWorkflowTest {
     public void addCommentsOnNullWorkflowAndNonEmptyComment() throws IOException, TimeoutException {
         when(site.getSession()).thenReturn(mockSession);
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
-        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(ISSUE_JQL, null, NON_EMPTY_COMMENT, mock(PrintStream.class));
+        site.progressMatchingIssues(mockTaskListener, mockRun, null, NON_EMPTY_COMMENT, mock(PrintStream.class));
 
         verify(mockSession, times(1)).addComment(anyString(), eq(NON_EMPTY_COMMENT),
                 isNull(String.class), isNull(String.class));
@@ -140,10 +215,10 @@ public class ChangingWorkflowTest {
     public void dontAddCommentsOnNullWorkflowAndNullComment() throws IOException, TimeoutException {
         when(site.getSession()).thenReturn(mockSession);
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
-        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(ISSUE_JQL, null, null, mock(PrintStream.class));
+        site.progressMatchingIssues(mockTaskListener, mockRun, null, null, mock(PrintStream.class));
 
         verify(mockSession, never()).addComment(anyString(), anyString(), isNull(String.class), isNull(String.class));
     }

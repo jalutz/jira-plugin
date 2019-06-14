@@ -24,8 +24,7 @@ import hudson.model.Job;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
+import hudson.tasks.*;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
@@ -41,7 +40,7 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Joe Hansche jhansche@myyearbook.com
  */
-public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
+public class JiraIssueUpdateBuilder extends Recorder implements SimpleBuildStep {
     private final String jqlSearch;
     private final String workflowActionName;
     private final String comment;
@@ -84,7 +83,6 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String realComment = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(comment));
-        String realJql = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(jqlSearch));
         String realWorkflowActionName = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(workflowActionName));
 
         JiraSite site = getSiteForJob(run.getParent());
@@ -99,10 +97,8 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println(Messages.JiraIssueUpdateBuilder_UpdatingWithAction(realWorkflowActionName));
         }
 
-        listener.getLogger().println("[JIRA] JQL: " + realJql);
-
         try {
-            if (!site.progressMatchingIssues(realJql, realWorkflowActionName, realComment, listener.getLogger())) {
+            if (!site.progressMatchingIssues(listener, run, realWorkflowActionName, realComment, listener.getLogger())) {
                 listener.getLogger().println(Messages.JiraIssueUpdateBuilder_SomeIssuesFailed());
                 run.setResult(Result.UNSTABLE);
             }
@@ -118,11 +114,16 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
+
     /**
      * Descriptor for {@link JiraIssueUpdateBuilder}.
      */
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         /**
          * Performs on-the-fly validation of the form field 'Jql'.
          *

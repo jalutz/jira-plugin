@@ -25,6 +25,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import hudson.Extension;
 import hudson.Util;
+import hudson.model.TaskListener;
+import hudson.model.Run;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Item;
@@ -34,6 +36,7 @@ import hudson.plugins.jira.extension.ExtendedAsynchronousJiraRestClient;
 import hudson.plugins.jira.extension.ExtendedJiraRestClient;
 import hudson.plugins.jira.extension.ExtendedVersion;
 import hudson.plugins.jira.model.JiraIssue;
+import hudson.plugins.jira.selector.DefaultIssueSelector;
 import hudson.security.ACL;
 import hudson.security.AccessControlled;
 import hudson.util.FormValidation;
@@ -58,13 +61,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1032,14 +1029,18 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
      * Progresses all issues matching the JQL search, using the given workflow action. Optionally
      * adds a comment to the issue(s) at the same time.
      *
-     * @param jqlSearch the query
+     *
+     *
+     * @param listener
+     * @param run
      * @param workflowActionName the workflowActionName
      * @param comment the comment
      * @param console the console
      * @throws TimeoutException TimeoutException if too long
      */
-    public boolean progressMatchingIssues(String jqlSearch, String workflowActionName, String comment, PrintStream console) throws TimeoutException {
+    public boolean progressMatchingIssues(TaskListener listener, Run<?, ?> run, String workflowActionName, String comment, PrintStream console) throws TimeoutException {
         JiraSession session = getSession();
+        PrintStream logger = listener.getLogger();
 
         if (session == null) {
             LOGGER.warning("JIRA session could not be established");
@@ -1048,7 +1049,19 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
         }
 
         boolean success = true;
-        List<Issue> issues = session.getIssuesFromJqlSearch(jqlSearch);
+        JiraSite site = JiraSite.get(run.getParent());
+        Set<String> ids = new DefaultIssueSelector().findIssueIds(run, site, listener);
+        List<Issue> issues = new ArrayList<>();
+
+        for (String id : ids) {
+            Issue issue = session.getIssue(id);
+            if (issue == null) {
+                logger.println(id + " issue doesn't exist in JIRA");
+                continue;
+            }
+
+            issues.add(issue);
+        }
 
         if (isEmpty(workflowActionName)) {
             console.println("[JIRA] No workflow action was specified, " +
