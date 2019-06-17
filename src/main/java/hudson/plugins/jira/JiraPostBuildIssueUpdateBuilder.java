@@ -19,13 +19,11 @@ import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.Util;
-import hudson.model.AbstractProject;
-import hudson.model.Job;
-import hudson.model.Result;
-import hudson.model.Run;
-import hudson.model.TaskListener;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
+import hudson.tasks.BuildStepMonitor;
+import hudson.tasks.Publisher;
+import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import org.apache.commons.lang.StringUtils;
@@ -41,13 +39,13 @@ import java.util.concurrent.TimeoutException;
  *
  * @author Joe Hansche jhansche@myyearbook.com
  */
-public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
+public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleBuildStep {
     private final String jqlSearch;
     private final String workflowActionName;
     private final String comment;
 
     @DataBoundConstructor
-    public JiraIssueUpdateBuilder(String jqlSearch, String workflowActionName, String comment) {
+    public JiraPostBuildIssueUpdateBuilder(String jqlSearch, String workflowActionName, String comment) {
         this.jqlSearch = Util.fixEmptyAndTrim(jqlSearch);
         this.workflowActionName = Util.fixEmptyAndTrim(workflowActionName);
         this.comment = Util.fixEmptyAndTrim(comment);
@@ -84,7 +82,6 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws InterruptedException, IOException {
         String realComment = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(comment));
-        String realJql = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(jqlSearch));
         String realWorkflowActionName = Util.fixEmptyAndTrim(run.getEnvironment(listener).expand(workflowActionName));
 
         JiraSite site = getSiteForJob(run.getParent());
@@ -99,10 +96,8 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
             listener.getLogger().println(Messages.JiraIssueUpdateBuilder_UpdatingWithAction(realWorkflowActionName));
         }
 
-        listener.getLogger().println("[JIRA] JQL: " + realJql);
-
         try {
-            if (!site.progressMatchingIssues(realJql, realWorkflowActionName, realComment, listener.getLogger())) {
+            if (!site.progressMatchingIssuesPostBuild(listener, run, realWorkflowActionName, realComment, listener.getLogger())) {
                 listener.getLogger().println(Messages.JiraIssueUpdateBuilder_SomeIssuesFailed());
                 run.setResult(Result.UNSTABLE);
             }
@@ -118,11 +113,16 @@ public class JiraIssueUpdateBuilder extends Builder implements SimpleBuildStep {
         return (DescriptorImpl) super.getDescriptor();
     }
 
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.NONE;
+    }
+
     /**
-     * Descriptor for {@link JiraIssueUpdateBuilder}.
+     * Descriptor for {@link JiraPostBuildIssueUpdateBuilder}.
      */
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         /**
          * Performs on-the-fly validation of the form field 'Jql'.
          *

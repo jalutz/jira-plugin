@@ -1029,6 +1029,32 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
      * Progresses all issues matching the JQL search, using the given workflow action. Optionally
      * adds a comment to the issue(s) at the same time.
      *
+     * @param jqlSearch the query
+     * @param workflowActionName the workflowActionName
+     * @param comment the comment
+     * @param console the console
+     * @throws TimeoutException TimeoutException if too long
+     */
+    public boolean progressMatchingIssues(String jqlSearch, String workflowActionName, String comment, PrintStream console) throws TimeoutException {
+        JiraSession session = getSession();
+
+        if (session == null) {
+            LOGGER.warning("JIRA session could not be established");
+            console.println(Messages.FailedToConnect());
+            return false;
+        }
+
+        boolean success = true;
+        List<Issue> issues = session.getIssuesFromJqlSearch(jqlSearch);
+
+        return progressSelectedIssues(workflowActionName, comment, console, session, success, issues);
+    }
+
+
+    /**
+     * Progresses all issues matching the JQL search, using the given workflow action. Optionally
+     * adds a comment to the issue(s) at the same time.
+     *
      *
      *
      * @param listener
@@ -1038,7 +1064,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
      * @param console the console
      * @throws TimeoutException TimeoutException if too long
      */
-    public boolean progressMatchingIssues(TaskListener listener, Run<?, ?> run, String workflowActionName, String comment, PrintStream console) throws TimeoutException {
+    public boolean progressMatchingIssuesPostBuild(TaskListener listener, Run<?, ?> run, String workflowActionName, String comment, PrintStream console) throws TimeoutException {
         JiraSession session = getSession();
         PrintStream logger = listener.getLogger();
 
@@ -1063,6 +1089,10 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             issues.add(issue);
         }
 
+        return progressSelectedIssues(workflowActionName, comment, console, session, success, issues);
+    }
+
+    private boolean progressSelectedIssues(String workflowActionName, String comment, PrintStream console, JiraSession session, boolean success, List<Issue> issues) {
         if (isEmpty(workflowActionName)) {
             console.println("[JIRA] No workflow action was specified, " +
                     "thus no status update will be made for any of the matching issues.");
@@ -1098,6 +1128,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
 
         return success;
     }
+
 
     @Extension
     public static class DescriptorImpl extends Descriptor<JiraSite> {

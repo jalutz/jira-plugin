@@ -185,10 +185,10 @@ public class ChangingWorkflowTest {
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
         when(mockSession.getActionIdForIssue(anyString(),
                 eq(NON_EMPTY_WORKFLOW_LOWERCASE))).thenReturn(Integer.valueOf(randomNumeric(5)));
-        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(mockTaskListener, mockRun,
+        site.progressMatchingIssues(ISSUE_JQL,
                 NON_EMPTY_WORKFLOW_LOWERCASE, NON_EMPTY_COMMENT, mock(PrintStream.class));
 
         verify(mockSession, times(1)).addComment(anyString(), eq(NON_EMPTY_COMMENT),
@@ -201,10 +201,10 @@ public class ChangingWorkflowTest {
     public void addCommentsOnNullWorkflowAndNonEmptyComment() throws IOException, TimeoutException {
         when(site.getSession()).thenReturn(mockSession);
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
-        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(mockTaskListener, mockRun, null, NON_EMPTY_COMMENT, mock(PrintStream.class));
+        site.progressMatchingIssues(ISSUE_JQL, null, NON_EMPTY_COMMENT, mock(PrintStream.class));
 
         verify(mockSession, times(1)).addComment(anyString(), eq(NON_EMPTY_COMMENT),
                 isNull(String.class), isNull(String.class));
@@ -215,10 +215,10 @@ public class ChangingWorkflowTest {
     public void dontAddCommentsOnNullWorkflowAndNullComment() throws IOException, TimeoutException {
         when(site.getSession()).thenReturn(mockSession);
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
-        when(site.progressMatchingIssues(any(TaskListener.class), any(Run.class), anyString(), anyString(), Matchers.any(PrintStream.class)))
+        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
                 .thenCallRealMethod();
 
-        site.progressMatchingIssues(mockTaskListener, mockRun, null, null, mock(PrintStream.class));
+        site.progressMatchingIssues(ISSUE_JQL, null, null, mock(PrintStream.class));
 
         verify(mockSession, never()).addComment(anyString(), anyString(), isNull(String.class), isNull(String.class));
     }
