@@ -1098,6 +1098,9 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
                     "thus no status update will be made for any of the matching issues.");
         }
 
+        console.println(String.format("CONSOLE in progress for workflow: %s, comment: %s", workflowActionName, comment));
+        LOGGER.info(String.format("LOGGER in progress for workflow: %s, comment: %s", workflowActionName, comment));
+
         for (Issue issue : issues) {
             String issueKey = issue.getKey();
 
@@ -1118,11 +1121,15 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
                 console.println(Messages.JiraIssueUpdateBuilder_UnknownWorkflowAction(issueKey, workflowActionName));
                 success = false;
                 continue;
+            } else {
+                LOGGER.info(String.format("Found action id for %s: %s", workflowActionName, actionId));
             }
 
             String newStatus = session.progressWorkflowAction(issueKey, actionId);
 
             console.println(String.format("[JIRA] Issue %s transitioned to \"%s\" due to action \"%s\".",
+                    issueKey, newStatus, workflowActionName));
+            LOGGER.info(String.format("[JIRA] Issue %s transitioned to \"%s\" due to action \"%s\".",
                     issueKey, newStatus, workflowActionName));
         }
 

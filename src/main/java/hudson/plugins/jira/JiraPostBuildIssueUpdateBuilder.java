@@ -93,16 +93,16 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
         }
 
         if (StringUtils.isNotEmpty(realWorkflowActionName)) {
-            listener.getLogger().println(Messages.JiraIssueUpdateBuilder_UpdatingWithAction(realWorkflowActionName));
+            listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_UpdatingWithAction(realWorkflowActionName));
         }
 
         try {
             if (!site.progressMatchingIssuesPostBuild(listener, run, realWorkflowActionName, realComment, listener.getLogger())) {
-                listener.getLogger().println(Messages.JiraIssueUpdateBuilder_SomeIssuesFailed());
+                listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_SomeIssuesFailed());
                 run.setResult(Result.UNSTABLE);
             }
         } catch (TimeoutException e) {
-            listener.getLogger().println(Messages.JiraIssueUpdateBuilder_Failed());
+            listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_Failed());
             e.printStackTrace(listener.getLogger());
             run.setResult(Result.FAILURE);
         }
@@ -131,7 +131,7 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
          */
         public FormValidation doCheckJqlSearch(@QueryParameter String value) {
             if (value.length() == 0) {
-                return FormValidation.error(Messages.JiraIssueUpdateBuilder_NoJqlSearch());
+                return FormValidation.error(Messages.JiraPostBuildIssueUpdateBuilder_NoJqlSearch());
             }
 
             return FormValidation.ok();
@@ -139,7 +139,7 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
 
         public FormValidation doCheckWorkflowActionName(@QueryParameter String value) {
             if (Util.fixNull(value).trim().length() == 0) {
-                return FormValidation.warning(Messages.JiraIssueUpdateBuilder_NoWorkflowAction());
+                return FormValidation.warning(Messages.JiraPostBuildIssueUpdateBuilder_NoWorkflowAction());
             }
 
             return FormValidation.ok();
@@ -153,7 +153,7 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
          * This human readable name is used in the configuration screen.
          */
         public String getDisplayName() {
-            return Messages.JiraIssueUpdateBuilder_DisplayName();
+            return Messages.JiraPostBuildIssueUpdateBuilder_DisplayName();
         }
     }
 }
