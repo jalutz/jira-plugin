@@ -60,7 +60,7 @@ public class DefaultIssueSelectorTest {
         JiraSite site = mock(JiraSite.class);
         
         when(site.getIssuePattern()).thenReturn(JiraSite.DEFAULT_ISSUE_PATTERN);
-        
+
         Set<? extends Entry> entries = Sets.newHashSet(new MockEntry("Fixed JI123-4711"),
                 new MockEntry("Fixed foo_bar-4710"), new MockEntry("Fixed FoO_bAr-4711"),
                 new MockEntry("Fixed something.\nJFoO_bAr_MULTI-4718"), new MockEntry("TR-123: foo"),

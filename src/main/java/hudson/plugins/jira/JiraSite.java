@@ -1080,7 +1080,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
         List<Issue> issues = new ArrayList<>();
 
         for (String id : ids) {
-            console.println(String.format("Issue ID: %s", id));
             Issue issue = session.getIssue(id);
             if (issue == null) {
                 logger.println(id + " issue doesn't exist in JIRA");
@@ -1100,8 +1099,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             console.println("[JIRA] No workflow action was specified, " +
                     "thus no status update will be made for any of the matching issues.");
         }
-
-        console.println(String.format("CONSOLE in progress for workflow: %s, comment: %s", workflowActionName, comment));
 
         for (Issue issue : issues) {
             String issueKey = issue.getKey();
@@ -1127,10 +1124,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
                 console.println(String.format("Found action id for %s: %s", workflowActionName, actionId));
             }
 
-            String newStatus = session.progressWorkflowAction(issueKey, actionId);
-
-            console.println(String.format("[JIRA] Issue %s transitioned to \"%s\" due to action \"%s\".",
-                    issueKey, newStatus, workflowActionName));
+            session.progressWorkflowAction(issueKey, actionId);
         }
 
         return success;
