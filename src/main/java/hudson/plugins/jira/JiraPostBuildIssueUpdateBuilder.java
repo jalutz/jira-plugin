@@ -99,7 +99,6 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
         try {
             if (!site.progressMatchingIssuesPostBuild(listener, run, realWorkflowActionName, realComment, listener.getLogger())) {
                 listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_SomeIssuesFailed());
-                run.setResult(Result.UNSTABLE);
             }
         } catch (TimeoutException e) {
             listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_Failed());

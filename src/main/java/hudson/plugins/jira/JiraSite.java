@@ -1084,8 +1084,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             if (issue == null) {
                 logger.println(id + " issue doesn't exist in JIRA");
                 continue;
-            } else {
-                console.println(String.format("Found Issue: %s", issue));
             }
 
             issues.add(issue);
