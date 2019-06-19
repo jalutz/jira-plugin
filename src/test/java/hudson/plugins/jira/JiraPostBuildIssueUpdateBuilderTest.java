@@ -67,15 +67,6 @@ public class JiraPostBuildIssueUpdateBuilderTest {
 		builder.perform(build, workspace, launcher, listener);
 		assertThat(result, is(Result.FAILURE));
 	}
-	
-	@Test
-	public void performTimeout() throws InterruptedException, IOException, TimeoutException {
-		JiraPostBuildIssueUpdateBuilder builder = spy(new JiraPostBuildIssueUpdateBuilder(null, null, null));
-		doReturn(site).when(builder).getSiteForJob(Mockito.any());
-		doThrow(new TimeoutException()).when(site).progressMatchingIssuesPostBuild(any(TaskListener.class), any(Run.class), Mockito.anyString(), Mockito.anyString(), (PrintStream) Mockito.any());
-		builder.perform(build, workspace, launcher, listener);
-		assertThat(result, is(Result.FAILURE));
-	}
 
 	@Test
 	public void performProgressOK() throws InterruptedException, IOException, TimeoutException {

@@ -1118,7 +1118,7 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
                 success = false;
                 continue;
             } else {
-                console.println(String.format("Found action id for %s: %s", workflowActionName, actionId));
+                console.println(String.format("[%s]: Found action id %s for workflow action '%s'", issueKey, actionId, workflowActionName));
             }
 
             session.progressWorkflowAction(issueKey, actionId);
