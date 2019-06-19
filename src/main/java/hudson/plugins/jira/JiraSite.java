@@ -1105,7 +1105,6 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
                 session.addComment(issueKey, comment, null, null);
             }
 
-
             if (isEmpty(workflowActionName)) {
                 continue;
             }
@@ -1123,6 +1122,10 @@ public class JiraSite extends AbstractDescribableImpl<JiraSite> {
             }
 
             session.progressWorkflowAction(issueKey, actionId);
+
+            if (isNotEmpty(comment)) {
+                session.addComment(issueKey, comment, null, null);
+            }
         }
 
         return success;

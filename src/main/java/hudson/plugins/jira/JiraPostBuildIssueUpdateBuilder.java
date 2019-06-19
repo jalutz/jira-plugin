@@ -103,7 +103,6 @@ public class JiraPostBuildIssueUpdateBuilder extends Recorder implements SimpleB
         } catch (TimeoutException e) {
             listener.getLogger().println(Messages.JiraPostBuildIssueUpdateBuilder_Failed());
             e.printStackTrace(listener.getLogger());
-            run.setResult(Result.FAILURE);
         }
     }
 
