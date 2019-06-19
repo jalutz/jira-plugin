@@ -198,20 +198,6 @@ public class ChangingWorkflowTest {
 
 
     @Test
-    public void addCommentsOnNullWorkflowAndNonEmptyComment() throws IOException, TimeoutException {
-        when(site.getSession()).thenReturn(mockSession);
-        when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
-        when(site.progressMatchingIssues(anyString(), anyString(), anyString(), Matchers.any(PrintStream.class)))
-                .thenCallRealMethod();
-
-        site.progressMatchingIssues(ISSUE_JQL, null, NON_EMPTY_COMMENT, mock(PrintStream.class));
-
-        verify(mockSession, times(1)).addComment(anyString(), eq(NON_EMPTY_COMMENT),
-                isNull(String.class), isNull(String.class));
-    }
-
-
-    @Test
     public void dontAddCommentsOnNullWorkflowAndNullComment() throws IOException, TimeoutException {
         when(site.getSession()).thenReturn(mockSession);
         when(mockSession.getIssuesFromJqlSearch(anyString())).thenReturn(Arrays.asList(mock(Issue.class)));
